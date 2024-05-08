@@ -3,9 +3,11 @@ const bcrypt = require("bcryptjs");
 const User = require("../models/usermodel");
 const jwt = require("jsonwebtoken");
 const authMiddleware = require("../middlewares/authMiddleware");
+const Inventory = require("../models/inventoryModel");
+const mongoose = require( "mongoose" );
 
 //register new user :
-router.post("/register", async (req, res) => {
+router.post("/register" , async (req, res) => {
   try {
     //check if user exist
     console.log(req.body.email);
@@ -50,6 +52,15 @@ router.post("/login", async (req, res) => {
         message: "User not found",
       });
     }
+
+    //check if userType matches
+    if (user.userType !== req.body.userType) {
+      return res.send({
+        success: false,
+        message: `User is not registered as ${req.body.userType}`,
+      });
+    }
+
     // verify the password
     const validPassword = await bcrypt.compare(
       req.body.password,
@@ -81,21 +92,127 @@ router.post("/login", async (req, res) => {
 });
 
 //get current user
-router.get("/getCurrentUser",authMiddleware, async (req, res) => {
+router.get("/get-current-user", authMiddleware , async (req, res) => {
   try {
-      const user = await User.findOne({_id: req.body.userId});
-      console.log(user);
-      res.send({
+      const user = await User.findOne({ _id: req.body.userId });
+      return res.send({
         success: true,
         message: "user fetched succesfully",
         data: user,
       });
   } catch (error) {
-    res.send({
+    return res.send({
       success: false,
       message: error.message,
     });
   }
-})
+});
+
+//get all uniquie donars
+
+router.get("/get-all-donors", authMiddleware, async (req, res) => {
+  try {
+      //get all unique donor ids
+      
+      const organization = new mongoose.Types.ObjectId(req.body.userId)
+      const uniqueDonorIds = await Inventory.distinct("donar" , {
+        organization,
+      });
+
+      const donars = await User.find({
+        _id: { $in: uniqueDonorIds },
+      });
+
+      return res.send({
+        success: true,
+        message: "donors fetched succesfully",
+        data: donars,
+      });
+  } catch (error) {
+    return res.send({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+router.get("/get-all-hospitals", authMiddleware, async (req, res) => {
+  try {
+      //get all unique hospital ids
+      
+      const organization = new mongoose.Types.ObjectId(req.body.userId)
+      const uniqueHospitalIds = await Inventory.distinct("hospital" , {
+        organization,
+      });
+
+      const hospitals = await User.find({
+        _id: { $in: uniqueHospitalIds },
+      });
+
+      return res.send({
+        success: true,
+        message: "hospitals fetched succesfully",
+        data: hospitals,
+      });
+  } catch (error) {
+    return res.send({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+router.get("/get-all-organization-of-donars", authMiddleware, async (req, res) => {
+  try {
+      //get all unique org for donars
+      
+      const donar = new mongoose.Types.ObjectId(req.body.userId)
+      const uniqueOrganization = await Inventory.distinct("organization" , {
+        donar,
+      });
+
+      const hospitals = await User.find({
+        _id: { $in: uniqueOrganization },
+      });
+
+      return res.send({
+        success: true,
+        message: "organization fetched succesfully",
+        data: hospitals,
+      });
+  } catch (error) {
+    return res.send({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+router.get("/get-all-organization-of-hospitals", authMiddleware, async (req, res) => {
+  try {
+      //get all unique org for hospitals
+      
+      const hospital = new mongoose.Types.ObjectId(req.body.userId)
+      const uniqueOrganization = await Inventory.distinct("organization" , {
+        hospital ,
+      });
+
+      const hospitals = await User.find({
+        _id: { $in : uniqueOrganization },
+      });
+
+      return res.send({
+        success: true,
+        message: "organization fetched succesfully",
+        data: hospitals,
+      });
+  } catch (error) {
+    return res.send({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
 
 module.exports = router;

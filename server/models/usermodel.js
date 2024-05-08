@@ -41,6 +41,15 @@ const userSchema = new mongoose.Schema({
       return false;
     },
   },
+  owner: {
+    type: String,
+    required: function () {
+      if ((this.userType === "hospital") || (this.userType === "organization")) {
+        return true;
+      }
+      return false;
+    },
+  },
   adress: {
     type: String,
     required: function () {
